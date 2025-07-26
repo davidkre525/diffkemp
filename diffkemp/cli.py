@@ -201,7 +201,7 @@ def make_argument_parser():
                             dest="disable_pattern", const="all",
                             help="disable all built-in patterns")
 
-    compare_ap.set_defaults(func=diffkemp.diffkemp.compare)
+    compare_ap.set_defaults(func=diffkemp.compare.compare)
 
     # "view" sub-command
     view_ap = sub_ap.add_parser("view",
