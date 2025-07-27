@@ -1,6 +1,7 @@
 import argparse
 from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
 import diffkemp.building.building_snapshot_files.build_kernel
+import diffkemp.compare
 import diffkemp.diffkemp
 import os
 

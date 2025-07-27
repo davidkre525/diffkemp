@@ -59,23 +59,13 @@ def compare(args):
             modules_to_cache = set()
 
         for fun, old_fun_desc in sorted(group.functions.items()):
-            # Check if the function exists in the other snapshot
-            new_fun_desc = config.snapshot_second.get_by_name(fun, group_name)
+
+            new_fun_desc, glob_var = function_prep(config, fun, group_name,
+                                                   result, old_fun_desc,
+                                                   group_printed)
             if not new_fun_desc:
+                group_printed = glob_var
                 continue
-
-            # Check if the module exists in both snapshots
-            if old_fun_desc.mod is None or new_fun_desc.mod is None:
-                result.add_inner(Result(Result.Kind.UNKNOWN, fun, fun))
-                if group_name is not None and not group_printed:
-                    print("{}:".format(group_name))
-                    group_printed = True
-                print("{}: unknown".format(fun))
-                continue
-
-            # If function has a global variable, set it
-            glob_var = LlvmParam(old_fun_desc.glob_var) \
-                if old_fun_desc.glob_var else None
 
             # Run the semantic diff
             fun_result = functions_diff(
@@ -102,49 +92,18 @@ def compare(args):
                 if fun_result.kind in [Result.Kind.NOT_EQUAL,
                                        Result.Kind.UNKNOWN,
                                        Result.Kind.ERROR] or config.full_diff:
-                    if fun_result.kind == Result.Kind.NOT_EQUAL or \
-                       config.full_diff:
-                        # Create the output directory if needed
-                        if output_dir is not None:
-                            if not os.path.isdir(output_dir):
-                                os.mkdir(output_dir)
-                        # Create the group directory or print the group name
-                        # if needed
-                        if group_dir is not None:
-                            if not os.path.isdir(group_dir):
-                                os.mkdir(group_dir)
-                        elif group_name is not None and not group_printed:
-                            print("{}:".format(group_name))
-                            group_printed = True
-                        print_syntax_diff(
-                            snapshot_dir_old=args.snapshot_dir_old,
-                            snapshot_dir_new=args.snapshot_dir_new,
-                            fun=fun,
-                            fun_result=fun_result,
-                            fun_tag=old_fun_desc.tag,
-                            output_dir=group_dir if group_dir else output_dir,
-                            show_diff=config.show_diff,
-                            full_diff=config.full_diff,
-                            initial_indent=2 if (group_name is not None and
-                                                 group_dir is None) else 0)
-                    else:
-                        # Print the group name if needed
-                        if group_name is not None and not group_printed:
-                            print("{}:".format(group_name))
-                            group_printed = True
-                        print("{}: {}".format(fun, str(fun_result.kind)))
-
+                    group_printed = print_information(fun_result, config,
+                                                      output_dir, fun, 
+                                                      group_dir, group_name, 
+                                                      args, old_fun_desc, group_printed)
             # Clean LLVM modules (allow GC to collect the occupied memory)
             old_fun_desc.mod.clean_module()
             new_fun_desc.mod.clean_module()
             LlvmModule.clean_all()
+
     # Create yaml output
     if output_dir is not None and os.path.isdir(output_dir):
-        old_dir_abs = os.path.join(os.path.abspath(args.snapshot_dir_old), "")
-        new_dir_abs = os.path.join(os.path.abspath(args.snapshot_dir_new), "")
-        yaml_output = YamlOutput(snapshot_dir_old=old_dir_abs,
-                                 snapshot_dir_new=new_dir_abs, result=result)
-        yaml_output.save(output_dir=output_dir, file_name=YAML_FILE_NAME)
+        create_yaml_output(args, result, output_dir)
     config.snapshot_first.finalize()
     config.snapshot_second.finalize()
 
@@ -159,6 +118,72 @@ def compare(args):
         result.report_stat(args.show_errors, args.extended_stat)
     return 0
 
+
+def function_prep(config, fun, group_name, result, old_fun_desc, group_printed):
+    # Check if the function exists in the other snapshot
+    new_fun_desc = config.snapshot_second.get_by_name(fun, group_name)
+    if not new_fun_desc:
+        return new_fun_desc, group_printed
+
+    # Check if the module exists in both snapshots
+    if old_fun_desc.mod is None or new_fun_desc.mod is None:
+        result.add_inner(Result(Result.Kind.UNKNOWN, fun, fun))
+        if group_name is not None and not group_printed:
+            print("{}:".format(group_name))
+            group_printed = True
+        print("{}: unknown".format(fun))
+        return False, group_printed
+
+    # If function has a global variable, set it
+    glob_var = LlvmParam(old_fun_desc.glob_var) \
+        if old_fun_desc.glob_var else None
+
+    return new_fun_desc, glob_var
+
+
+def print_information(fun_result, config, output_dir, fun, group_dir,
+                      group_name, args, old_fun_desc, group_printed):
+    if fun_result.kind == Result.Kind.NOT_EQUAL or \
+        config.full_diff:
+        # Create the output directory if needed
+        if output_dir is not None:
+            if not os.path.isdir(output_dir):
+                os.mkdir(output_dir)
+        # Create the group directory or print the group name
+        # if needed
+        if group_dir is not None:
+            if not os.path.isdir(group_dir):
+                os.mkdir(group_dir)
+        elif group_name is not None and not group_printed:
+            print("{}:".format(group_name))
+            group_printed = True
+        print_syntax_diff(
+            snapshot_dir_old=args.snapshot_dir_old,
+            snapshot_dir_new=args.snapshot_dir_new,
+            fun=fun,
+            fun_result=fun_result,
+            fun_tag=old_fun_desc.tag,
+            output_dir=group_dir if group_dir else output_dir,
+            show_diff=config.show_diff,
+            full_diff=config.full_diff,
+            initial_indent=2 if (group_name is not None and
+                                    group_dir is None) else 0)
+    else:
+        # Print the group name if needed
+        if group_name is not None and not group_printed:
+            print("{}:".format(group_name))
+            group_printed = True
+        print("{}: {}".format(fun, str(fun_result.kind)))
+
+    return group_printed
+
+
+def create_yaml_output(args, result, output_dir):
+    old_dir_abs = os.path.join(os.path.abspath(args.snapshot_dir_old), "")
+    new_dir_abs = os.path.join(os.path.abspath(args.snapshot_dir_new), "")
+    yaml_output = YamlOutput(snapshot_dir_old=old_dir_abs,
+                                snapshot_dir_new=new_dir_abs, result=result)
+    yaml_output.save(output_dir=output_dir, file_name=YAML_FILE_NAME)
 
 def _get_modules_to_cache(functions, group_name, other_snapshot,
                           min_frequency):
