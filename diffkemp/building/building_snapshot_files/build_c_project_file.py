@@ -4,7 +4,7 @@ from diffkemp.llvm_ir.single_c_builder import SingleCBuilder
 from diffkemp.llvm_ir.source_tree import SourceTree
 from diffkemp.llvm_ir.wrapper_build_finder import WrapperBuildFinder
 from diffkemp.snapshot import Snapshot
-from diffkemp.building.building_files.build_utils import read_symbol_list, generate_from_function_list
+from diffkemp.building.building_snapshot_files.build_utils import read_symbol_list, generate_from_function_list
 from subprocess import check_call, CalledProcessError
 from tempfile import mkdtemp
 import errno
