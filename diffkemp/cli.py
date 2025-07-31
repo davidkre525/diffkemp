@@ -1,6 +1,7 @@
 import argparse
 from argparse import ArgumentParser, ArgumentTypeError, SUPPRESS
 import diffkemp.diffkemp
+import diffkemp.viewer
 import os
 
 
@@ -210,7 +211,7 @@ def make_argument_parser():
                          action="store_true",
                          help="runs development server instead of production \
                          server")
-    view_ap.set_defaults(func=diffkemp.diffkemp.view)
+    view_ap.set_defaults(func=diffkemp.viewer.view)
     return ap
 
 
