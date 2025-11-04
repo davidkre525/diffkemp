@@ -40,6 +40,10 @@ class YamlOutput:
         results = []
         for fun_name, fun_result in self.result.inner.items():
             if fun_result.kind != Result.Kind.NOT_EQUAL:
+                results.append({
+                    "function": fun_name,
+                    "result": fun_result.__str__()
+                })
                 continue
             self.function_names.add(fun_name)
             # list of not-equal functions callstacks for a function
@@ -70,6 +74,7 @@ class YamlOutput:
                 diffs.append(diff)
             results.append({
                 "function": fun_name,
+                "result": fun_result.__str__(),
                 "diffs": diffs
             })
         self.output["results"] = results
