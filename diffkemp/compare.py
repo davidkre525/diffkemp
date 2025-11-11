@@ -139,10 +139,18 @@ class SnapshotComparator:
         return 0
 
     def _compare_groups(self, group_info):
-        for fun, old_fun_desc in sorted(group_info.group.functions.items()):
-            self._compare_function(fun, old_fun_desc, group_info)
+        group_name = group_info.group_name
+        if group_name is not None:
+            group_result = Result(Result.Kind.NONE, group_name, group_name)
+            self.result.add_innner(group_result)
+            self.result.has_inner_groups = True
+        else:
+            group_result = self.result
 
-    def _compare_function(self, fun, old_fun_desc, group_info):
+        for fun, old_fun_desc in sorted(group_info.group.functions.items()):
+            self._compare_function(fun, old_fun_desc, group_info, group_result)
+
+    def _compare_function(self, fun, old_fun_desc, group_info, group_result):
         # Check if the function exists in the other snapshot
         new_fun_desc = \
             self.config.snapshot_second.get_by_name(fun, group_info.group_name)
@@ -151,7 +159,8 @@ class SnapshotComparator:
 
         # Check if the module exists in both snapshots
         if not self._modules_exist(old_fun_desc, new_fun_desc):
-            self._handle_missing_module(fun, old_fun_desc, group_info)
+            self._handle_missing_module(fun, old_fun_desc, group_info,
+                                        group_result)
             return
 
         # If function has a global variable, set it
@@ -169,7 +178,8 @@ class SnapshotComparator:
             modules_to_cache=group_info.modules_to_cache)
         group_info.result_graph = fun_result.graph
 
-        self._handle_fun_result(fun_result, fun, old_fun_desc, group_info)
+        self._handle_fun_result(fun_result, fun, old_fun_desc,
+                                group_info, group_result)
         self._cleanup_modules(old_fun_desc, new_fun_desc)
 
     @staticmethod
@@ -177,18 +187,20 @@ class SnapshotComparator:
         return old_fun_desc.mod is not None and \
                 new_fun_desc.mod is not None
 
-    def _handle_missing_module(self, fun, old_fun_desc, group_info):
+    def _handle_missing_module(self, fun, old_fun_desc, group_info,
+                               group_result):
         fun_result = Result(Result.Kind.UNKNOWN, fun, fun)
-        self.result.add_inner(fun_result)
+        group_result.add_inner(fun_result)
         self._print_fun_result(fun_result, fun, old_fun_desc, group_info)
 
-    def _handle_fun_result(self, fun_result, fun, old_fun_desc, group_info):
+    def _handle_fun_result(self, fun_result, fun, old_fun_desc, group_info,
+                           group_result):
 
         if self.args.regex_filter is not None:
             # Filter results by regex
             self._filter_result_by_regex(fun_result)
 
-        self.result.add_inner(fun_result)
+        group_result.add_inner(fun_result)
 
         # Printing information about failures and non-equal functions.
         if fun_result.kind in [Result.Kind.NOT_EQUAL,

@@ -35,10 +35,25 @@ class YamlOutput:
         self._create_definitions()
 
     def _create_results(self):
+        # list of group results or all functionresults
+        main_results = []
+        if self.result.has_inner_groups:
+            for group_name, group_result in self.result.inner.items():
+                results = []
+                self._create_group_results(results, group_result)
+
+                main_results.append({
+                    "sysctl": group_name,
+                    "results": results
+                })
+        else:
+            self._create_group_results(main_results, self.result)
+
+        self.output["results"] = main_results
+
+    def _create_group_results(self, results, comparison_result):
         """Creates call stacks of not-equal functions."""
-        # list of all not-equal functions callstacks
-        results = []
-        for fun_name, fun_result in self.result.inner.items():
+        for fun_name, fun_result in comparison_result.inner.items():
             if fun_result.kind != Result.Kind.NOT_EQUAL:
                 continue
             self.function_names.add(fun_name)
@@ -72,7 +87,6 @@ class YamlOutput:
                 "function": fun_name,
                 "diffs": diffs
             })
-        self.output["results"] = results
 
     def _create_definitions(self):
         self.output["definitions"] = {}

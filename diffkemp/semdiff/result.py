@@ -194,6 +194,7 @@ class Result:
         self.inner = dict()
         self.start_time = start_time
         self.stop_time = stop_time
+        self.has_inner_groups = False
 
     def __str__(self):
         return str(self.kind)
