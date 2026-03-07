@@ -1,4 +1,5 @@
 from diffkemp.llvm_ir.source_tree import SourceNotFoundException
+from diffkemp.llvm_ir.llvm_module import LlvmParam
 import sys
 import os
 
@@ -19,7 +20,7 @@ def read_symbol_list(list_path):
                 (symbol[0].isalpha() or symbol[0] == "_")]
 
 
-def generate_from_function_list(snapshot, fun_list):
+def generate_from_function_list(snapshot, fun_list, args):
     """
     Generate a snapshot from a list of functions.
     For each function, find the source with its definition, compile it into
@@ -38,12 +39,56 @@ def generate_from_function_list(snapshot, fun_list):
             # the snapshot
             llvm_mod = snapshot.source_tree.get_module_for_symbol(symbol)
             if llvm_mod.has_function(symbol):
-                snapshot.add_fun(symbol, llvm_mod)
-                print(os.path.relpath(llvm_mod.llvm,
-                                      snapshot.source_tree.source_dir))
+                if args.symbol_kind != "glob-var":
+                    snapshot.add_fun(symbol, llvm_mod)
+                    print(os.path.relpath(llvm_mod.llvm,
+                                          snapshot.source_tree.source_dir))
+                else:
+                    snapshot.add_fun(symbol, None)
+                    print("function omitted for selected symbol-kind")
+            elif llvm_mod.has_global(symbol):
+                if args.symbol_kind != "function":
+                    if add_funcs_for_globvar(snapshot, symbol,
+                                             LlvmParam(symbol)):
+                        snapshot.list_kind = "glob_var"
+                else:
+                    snapshot.add_fun(symbol, None)
+                    print("global variable omitted for selected symbol-kind")
             else:
                 snapshot.add_fun(symbol, None)
-                print("not a function")
+                print("not a function nor a global variable")
         except SourceNotFoundException:
             print("source not found")
             snapshot.add_fun(symbol, None)
+
+
+def add_funcs_for_globvar(snapshot, name, data, skip_fun=None):
+    functions_added = False
+    if not data:
+        return functions_added
+
+    for module in \
+            snapshot.source_tree.get_modules_using_symbol(data.name):
+        # For now, we only support the x86 architecture in kernel
+        if "/arch/" in module.llvm and \
+                "/arch/x86/" not in module.llvm:
+            continue
+
+        curr_mod_path = os.path.relpath(module.llvm,
+                                        snapshot.source_tree.source_dir)
+        for func in module.get_functions_using_param(data):
+            if skip_fun is not None and func == skip_fun:
+                continue
+
+            functions_added = True
+            snapshot.add_fun(
+                name=func,
+                llvm_mod=module,
+                glob_var=data.name,
+                tag="using global variable \"{}\"".format(data.name),
+                group=name)
+            print("  {}: {} (using global variable \"{}\")".format(
+                func,
+                curr_mod_path,
+                data.name))
+    return functions_added

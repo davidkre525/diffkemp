@@ -90,6 +90,13 @@ def make_argument_parser():
         help="do not store path to the source kernel directory in snapshot")
     build_kernel_ap.set_defaults(func=build_kernel)
 
+    # "build-kernel" and "build" shared options
+    for command in [build_ap, build_kernel_ap]:
+        command.add_argument("--symbol-kind",
+                             help="compare only specified kind of symbol from"
+                             "the symbol list",
+                             choices=["function", "glob-var"])
+
     # "llvm-to-snapshot" sub-command
     llvm_snapshot_ap = sub_ap.add_parser(
         "llvm-to-snapshot",

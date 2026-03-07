@@ -55,7 +55,7 @@ def build_c_project(args):
 
     # Build sources for symbols from the list into LLVM IR
     symbol_list = _build_for_symbols(args)
-    generate_from_function_list(snapshot, symbol_list)
+    generate_from_function_list(snapshot, symbol_list, args)
 
     # Create the snapshot directory containing the YAML description file
     snapshot.generate_snapshot_dir()
@@ -171,7 +171,7 @@ def build_c_file(args):
         else:
             sys.stderr.write("ERROR: no symbols were found in the file\n")
         sys.exit(errno.EINVAL)
-    generate_from_function_list(snapshot, function_list)
+    generate_from_function_list(snapshot, function_list, args)
 
     # Create the snapshot directory containing the YAML description file.
     snapshot.generate_snapshot_dir()
