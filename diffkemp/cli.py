@@ -85,6 +85,11 @@ def make_argument_parser():
         action="store_true",
         help="interpret symbol list as a list of sysctl parameters")
     build_kernel_ap.add_argument(
+        "--module-params",
+        action="store_true",
+        help="interpret symbol list as a list of kernel module parameters in \
+        the form module_path:parameter")
+    build_kernel_ap.add_argument(
         "--no-source-dir",
         action="store_true",
         help="do not store path to the source kernel directory in snapshot")
