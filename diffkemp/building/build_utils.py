@@ -57,8 +57,9 @@ def generate_from_function_list(snapshot, fun_list):
 def add_funcs_for_globvar(snapshot, name, data, skip_fun=None):
     functions_added = False
     if not data:
-        return functions_added
+        return False
 
+    functions_added = False
     for module in \
             snapshot.source_tree.get_modules_using_symbol(data.name):
         # For now, we only support the x86 architecture in kernel
@@ -66,21 +67,30 @@ def add_funcs_for_globvar(snapshot, name, data, skip_fun=None):
                 "/arch/x86/" not in module.llvm:
             continue
 
-        curr_mod_path = os.path.relpath(module.llvm,
-                                        snapshot.source_tree.source_dir)
-        for func in module.get_functions_using_param(data):
-            if skip_fun is not None and func == skip_fun:
-                continue
+        functions_added |= add_funcs_for_globvar_from_module(snapshot, name,
+                                                             data, module,
+                                                             skip_fun)
+    return functions_added
 
-            functions_added = True
-            snapshot.add_fun(
-                name=func,
-                llvm_mod=module,
-                glob_var=data.name,
-                tag="using global variable \"{}\"".format(data.name),
-                group=name)
-            print("  {}: {} (using global variable \"{}\")".format(
-                func,
-                curr_mod_path,
-                data.name))
+
+def add_funcs_for_globvar_from_module(snapshot, name, data,
+                                      module, skip_fun=None):
+    functions_added = False
+    curr_mod_path = os.path.relpath(module.llvm,
+                                    snapshot.source_tree.source_dir)
+    for func in module.get_functions_using_param(data):
+        if skip_fun is not None and func == skip_fun:
+            continue
+
+        functions_added = True
+        snapshot.add_fun(
+            name=func,
+            llvm_mod=module,
+            glob_var=data.name,
+            tag="using global variable \"{}\"".format(data.name),
+            group=name)
+        print("  {}: {} (using global variable \"{}\")".format(
+            func,
+            curr_mod_path,
+            data.name))
     return functions_added
