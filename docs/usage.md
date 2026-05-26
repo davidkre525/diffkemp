@@ -102,6 +102,16 @@ once such as:
 Currently, these sysctl option groups are supported: `kernel.*`,
 `vm.*`, `fs.*`, `net.core.*`, `net.ipv4.conf.*`.
 
+#### Comparing kernel modules
+
+Another supported mode of comparison is comparison of kernel modules. Similarly
+to sysctl option comparison, the list of module parameters to compare can be
+passed via `SYMBOL_LIST` to the `build-kernel` command together with the
+`--module-params` switch. Each entry in `SYMBOL_LIST` should have the form
+`module_path:parameter`. For each module parameter, DiffKemp compares semantics
+of all functions using the global variable corresponding to the parameter.
+Again, the `compare` command is used in the normal way.
+
 #### Options
 
 - `KERNEL_DIR`: Path to a kernel's root directory.
@@ -111,6 +121,8 @@ Currently, these sysctl option groups are supported: `kernel.*`,
   In case `--sysctl` is used, the list is interpreted as a list of sysctl
   parameters.
 - `--sysctl`: Compares sysctl option.
+- `--module-params`: Compares semantics of all functions from a given module
+  using the global variable corresponding to a given module parameter.
 - `--no-source-dir`: Does not store the path to the source kernel directory in
   the snapshot. This is useful if the comparison is done on a different system
   than building the snapshot (i.e. the path to the original kernel tree does
