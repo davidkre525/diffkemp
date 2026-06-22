@@ -165,7 +165,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 ArrayRef<Value *> Args_AR(Args);
 
                 // Insert the new instruction next to the old one
-                CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "", CI);
+                CallInst *CI_New = CallInst::Create(
+                        Fun_New, Args_AR, "", CI->getIterator());
                 copyCallInstProperties(CI, CI_New);
 
                 LOG_INDENT();

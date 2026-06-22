@@ -71,7 +71,7 @@ PreservedAnalyses
                                                            *arg,
                                                            paramType,
                                                            "",
-                                                           Call);
+                                                           Call->getIterator());
 
                             newArg->setDebugLoc(Call->getDebugLoc());
                             newArgs.push_back(newArg);
@@ -88,7 +88,8 @@ PreservedAnalyses
 
                     // Create a new call instruction using the
                     // source function and bitcasted arguments.
-                    auto newCall = CallInst::Create(srcFun, newArgs, "", Call);
+                    auto newCall = CallInst::Create(
+                            srcFun, newArgs, "", Call->getIterator());
                     Instruction *replacementValue = newCall;
                     copyCallInstProperties(Call, newCall);
 
@@ -102,7 +103,7 @@ PreservedAnalyses
                                                  newCall,
                                                  Call->getType(),
                                                  "",
-                                                 Call);
+                                                 Call->getIterator());
 
                         returnBitCast->setDebugLoc(Call->getDebugLoc());
                         replacementValue = returnBitCast;

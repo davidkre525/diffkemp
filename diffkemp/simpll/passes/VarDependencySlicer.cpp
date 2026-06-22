@@ -120,7 +120,7 @@ PreservedAnalyses
                     TermSucc->removePredecessor(&BB, true);
             }
             // Create and insert new branch
-            auto NewTerm = BranchInst::Create(NewSucc, Term);
+            auto NewTerm = BranchInst::Create(NewSucc, Term->getIterator());
             Term->eraseFromParent();
             IncludedInstrs.insert(NewTerm);
         } else {
@@ -463,13 +463,13 @@ std::set<const BasicBlock *>
                                                         BasicBlock *Succ) {
     // Replace terminator by unconditional branch and find all blocks reachable
     // through the new branch (one that omits all other successors)
-    auto NewBranch = BranchInst::Create(Succ, Terminator);
+    auto NewBranch = BranchInst::Create(Succ, Terminator->getIterator());
     Terminator->removeFromParent();
     auto reachable =
             reachableBlocks(NewBranch->getParent(), *Succ->getParent());
 
     // Restore original terminator
-    Terminator->insertBefore(NewBranch);
+    Terminator->insertBefore(NewBranch->getIterator());
     NewBranch->eraseFromParent();
 
     return reachable;

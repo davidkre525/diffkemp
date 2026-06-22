@@ -92,7 +92,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                                          {ConstantPointerNull::get(OpType),
                                           ConstantPointerNull::get(OpType)},
                                          "",
-                                         &Instr);
+                                         Instr.getIterator());
                 copyCallInstProperties(CallInstr, newCall);
                 CallInstr->replaceAllUsesWith(newCall);
                 toRemove.push_back(&Instr);
@@ -107,7 +107,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                                          {ConstantPointerNull::get(Op0Type),
                                           ConstantPointerNull::get(Op1Type)},
                                          "",
-                                         &Instr);
+                                         Instr.getIterator());
                 copyCallInstProperties(CallInstr, newCall);
                 CallInstr->replaceAllUsesWith(newCall);
                 toRemove.push_back(&Instr);

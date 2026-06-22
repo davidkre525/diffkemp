@@ -103,8 +103,8 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     }
                     if (!CallInstr->isInlineAsm())
                         args.push_back(Callee);
-                    auto newCall =
-                            CallInst::Create(newFun, args, "", CallInstr);
+                    auto newCall = CallInst::Create(
+                            newFun, args, "", CallInstr->getIterator());
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
                     LOG_VERBOSE_EXTRA_NO_INDENT("Replacing :"
                                                 << *CallInstr << "\n     with :"
