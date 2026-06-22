@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "SeparateCallsToBitcastPass.h"
+#include "LlvmCompatibility.h"
 
 #include "Logger.h"
 #include "Utils.h"
@@ -67,11 +68,12 @@ PreservedAnalyses
                             newArgs.push_back(*arg);
                         } else {
                             // Bitcast the argument so that the types match.
-                            auto newArg = CastInst::Create(Instruction::BitCast,
-                                                           *arg,
-                                                           paramType,
-                                                           "",
-                                                           Call);
+                            auto newArg = CastInst::Create(
+                                    Instruction::BitCast,
+                                    *arg,
+                                    paramType,
+                                    "",
+                                    llvm_compat::getIterator(Call));
 
                             newArg->setDebugLoc(Call->getDebugLoc());
                             newArgs.push_back(newArg);
@@ -88,7 +90,11 @@ PreservedAnalyses
 
                     // Create a new call instruction using the
                     // source function and bitcasted arguments.
-                    auto newCall = CallInst::Create(srcFun, newArgs, "", Call);
+                    auto newCall =
+                            CallInst::Create(srcFun,
+                                             newArgs,
+                                             "",
+                                             llvm_compat::getIterator(Call));
                     Instruction *replacementValue = newCall;
                     copyCallInstProperties(Call, newCall);
 
@@ -97,12 +103,12 @@ PreservedAnalyses
                         // If return types do not match, bitcast the new
                         // call result to the original result type.
                         // Calls with a void return type are not bitcasted.
-                        auto returnBitCast =
-                                CastInst::Create(Instruction::BitCast,
-                                                 newCall,
-                                                 Call->getType(),
-                                                 "",
-                                                 Call);
+                        auto returnBitCast = CastInst::Create(
+                                Instruction::BitCast,
+                                newCall,
+                                Call->getType(),
+                                "",
+                                llvm_compat::getIterator(Call));
 
                         returnBitCast->setDebugLoc(Call->getDebugLoc());
                         replacementValue = returnBitCast;

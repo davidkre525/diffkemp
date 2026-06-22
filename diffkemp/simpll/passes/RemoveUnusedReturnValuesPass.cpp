@@ -14,6 +14,7 @@
 #include "RemoveUnusedReturnValuesPass.h"
 #include "CalledFunctionsAnalysis.h"
 #include "FunctionAbstractionsGenerator.h"
+#include "LlvmCompatibility.h"
 #include "Logger.h"
 #include "Utils.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -165,7 +166,8 @@ PreservedAnalyses RemoveUnusedReturnValuesPass::run(
                 ArrayRef<Value *> Args_AR(Args);
 
                 // Insert the new instruction next to the old one
-                CallInst *CI_New = CallInst::Create(Fun_New, Args_AR, "", CI);
+                CallInst *CI_New = CallInst::Create(
+                        Fun_New, Args_AR, "", llvm_compat::getIterator(CI));
                 copyCallInstProperties(CI, CI_New);
 
                 LOG_INDENT();

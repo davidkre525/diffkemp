@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DifferentialFunctionComparatorTest.h"
+#include "LlvmCompatibility.h"
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/DebugInfoMetadata.h>
 
@@ -410,8 +411,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, CL);
-    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, CR);
+    builderL.insertDbgValueIntrinsic(
+            CL, varL, exprL, locL, llvm_compat::getIterator(CL));
+    builderR.insertDbgValueIntrinsic(
+            CR, varR, exprR, locR, llvm_compat::getIterator(CR));
 
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 0);
 
@@ -478,8 +481,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     exprR = builderR.createExpression();
     locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(CL, varL, exprL, locL, CL);
-    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, CR);
+    builderL.insertDbgValueIntrinsic(
+            CL, varL, exprL, locL, llvm_compat::getIterator(CL));
+    builderR.insertDbgValueIntrinsic(
+            CR, varR, exprR, locR, llvm_compat::getIterator(CR));
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 0);
 
     // Repeat the test again, but now with different structure types.
@@ -511,7 +516,8 @@ TEST_F(DifferentialFunctionComparatorTest, CmpAllocs) {
     PointerTypeR = builderR.createPointerType(StructTypeR, 64);
     varR = builderR.createAutoVariable(
             FunTypeR, "var", nullptr, 0, PointerTypeR);
-    builderR.insertDbgValueIntrinsic(CR, varR, exprR, locR, CR);
+    builderR.insertDbgValueIntrinsic(
+            CR, varR, exprR, locR, llvm_compat::getIterator(CR));
     ASSERT_EQ(DiffComp->testCmpAllocs(CL, CR), 1);
 }
 
@@ -614,8 +620,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
+    builderL.insertDbgValueIntrinsic(
+            AllL, varL, exprL, locL, llvm_compat::getIterator(AllL));
+    builderR.insertDbgValueIntrinsic(
+            AllR, varR, exprR, locR, llvm_compat::getIterator(AllR));
 
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), -1);
 
@@ -635,8 +643,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsets) {
                            ConstantInt::get(Type::getInt32Ty(CtxR), STyRSize)},
                           "",
                           BBR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
+    builderL.insertDbgValueIntrinsic(
+            AllL, varL, exprL, locL, llvm_compat::getIterator(AllL));
+    builderR.insertDbgValueIntrinsic(
+            AllR, varR, exprR, locR, llvm_compat::getIterator(AllR));
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
 
@@ -745,8 +755,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsMultipleDebugMetadata) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllR);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllL);
+    builderL.insertDbgValueIntrinsic(
+            AllL, varL, exprL, locL, llvm_compat::getIterator(AllR));
+    builderR.insertDbgValueIntrinsic(
+            AllR, varR, exprR, locR, llvm_compat::getIterator(AllL));
 
     // Debug metadata describing var from the scope of memset function.
     DIFile *MemsetUnitL = builderL.createFile("memset", "stdlib");
@@ -761,10 +773,16 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsMultipleDebugMetadata) {
             MemsetTypeL, "__dest", nullptr, 0, MemsetPointerTypeL);
     DILocalVariable *memsetVarR = builderR.createAutoVariable(
             MemsetTypeR, "__dest", nullptr, 0, MemsetPointerTypeR);
-    builderL.insertDbgValueIntrinsic(
-            AllL, memsetVarL, builderL.createExpression(), locL, AllL);
-    builderR.insertDbgValueIntrinsic(
-            AllR, memsetVarR, builderR.createExpression(), locR, AllR);
+    builderL.insertDbgValueIntrinsic(AllL,
+                                     memsetVarL,
+                                     builderL.createExpression(),
+                                     locL,
+                                     llvm_compat::getIterator(AllL));
+    builderR.insertDbgValueIntrinsic(AllR,
+                                     memsetVarR,
+                                     builderR.createExpression(),
+                                     locR,
+                                     llvm_compat::getIterator(AllR));
 
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }
@@ -837,8 +855,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsVoidPtrType) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
+    builderL.insertDbgValueIntrinsic(
+            AllL, varL, exprL, locL, llvm_compat::getIterator(AllL));
+    builderR.insertDbgValueIntrinsic(
+            AllR, varR, exprR, locR, llvm_compat::getIterator(AllR));
 
     ASSERT_NE(DiffComp->testCmpMemset(CL, CR), 0);
 }
@@ -970,8 +990,10 @@ TEST_F(DifferentialFunctionComparatorTest, CmpMemsetsOfTypedef) {
     DIExpression *exprR = builderR.createExpression();
     DILocation *locL = DILocation::get(DSubL->getContext(), 0, 0, DSubL);
     DILocation *locR = DILocation::get(DSubR->getContext(), 0, 0, DSubR);
-    builderL.insertDbgValueIntrinsic(AllL, varL, exprL, locL, AllL);
-    builderR.insertDbgValueIntrinsic(AllR, varR, exprR, locR, AllR);
+    builderL.insertDbgValueIntrinsic(
+            AllL, varL, exprL, locL, llvm_compat::getIterator(AllL));
+    builderR.insertDbgValueIntrinsic(
+            AllR, varR, exprR, locR, llvm_compat::getIterator(AllR));
 
     ASSERT_EQ(DiffComp->testCmpMemset(CL, CR), 0);
 }

@@ -15,6 +15,7 @@
 #include "FunctionAbstractionsGenerator.h"
 #include "CalledFunctionsAnalysis.h"
 #include "Config.h"
+#include "LlvmCompatibility.h"
 #include "Logger.h"
 #include "Utils.h"
 
@@ -103,8 +104,11 @@ FunctionAbstractionsGenerator::Result FunctionAbstractionsGenerator::run(
                     }
                     if (!CallInstr->isInlineAsm())
                         args.push_back(Callee);
-                    auto newCall =
-                            CallInst::Create(newFun, args, "", CallInstr);
+                    auto newCall = CallInst::Create(
+                            newFun,
+                            args,
+                            "",
+                            llvm_compat::getIterator(CallInstr));
                     newCall->setDebugLoc(CallInstr->getDebugLoc());
                     LOG_VERBOSE_EXTRA_NO_INDENT("Replacing :"
                                                 << *CallInstr << "\n     with :"

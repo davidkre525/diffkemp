@@ -19,6 +19,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "SimplifyKernelFunctionCallsPass.h"
+#include "LlvmCompatibility.h"
 #include "Utils.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/InlineAsm.h>
@@ -92,7 +93,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                                          {ConstantPointerNull::get(OpType),
                                           ConstantPointerNull::get(OpType)},
                                          "",
-                                         &Instr);
+                                         llvm_compat::getIterator(&Instr));
                 copyCallInstProperties(CallInstr, newCall);
                 CallInstr->replaceAllUsesWith(newCall);
                 toRemove.push_back(&Instr);
@@ -107,7 +108,7 @@ PreservedAnalyses SimplifyKernelFunctionCallsPass::run(
                                          {ConstantPointerNull::get(Op0Type),
                                           ConstantPointerNull::get(Op1Type)},
                                          "",
-                                         &Instr);
+                                         llvm_compat::getIterator(&Instr));
                 copyCallInstProperties(CallInstr, newCall);
                 CallInstr->replaceAllUsesWith(newCall);
                 toRemove.push_back(&Instr);
