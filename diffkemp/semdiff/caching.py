@@ -99,7 +99,7 @@ class ComparisonGraph:
             )
 
         @classmethod
-        def from_yaml(cls, fun_result, parent_graph=None):
+        def from_yaml(cls, fun_result, glob_var, parent_graph=None):
             """
             Generates a Vertex object including all edges from a YAML
             representation returned by SimpLL.
@@ -107,7 +107,8 @@ class ComparisonGraph:
             res_left = fun_result["first"]
             res_right = fun_result["second"]
             vertex = cls(
-                (res_left["function"], res_right["function"]),
+                ((res_left["function"], glob_var),
+                 (res_right["function"], glob_var)),
                 Result.Kind.from_string(fun_result["result"]),
                 (res_left.get("file", None), res_right.get("file", None)),
                 (res_left.get("line", None), res_right.get("line", None)),
@@ -120,7 +121,7 @@ class ComparisonGraph:
                                   (res_right,
                                    ComparisonGraph.Side.RIGHT)]:
                     for callee in res["calls"]:
-                        edge = ComparisonGraph.Edge.from_yaml(callee)
+                        edge = ComparisonGraph.Edge.from_yaml(callee, glob_var)
                         if parent_graph:
                             parent_graph.add_edge(vertex, side, edge)
                         else:
@@ -189,9 +190,9 @@ class ComparisonGraph:
             )
 
         @classmethod
-        def from_yaml(cls, callee):
+        def from_yaml(cls, callee, glob_var):
             """Generates an Edge object from YAML returned by SimpLL."""
-            res = cls(callee["function"], callee["file"], int(callee["line"]))
+            res = cls((callee["function"], glob_var), callee["file"], int(callee["line"]))
             res.kind = ComparisonGraph.DependencyKind.from_yaml(callee["weak"])
             return res
 
@@ -293,14 +294,23 @@ class ComparisonGraph:
         self._weak_vertex_cache = []
 
     def __getitem__(self, function_name):
+        if isinstance(function_name, str):
+            function_name = function_name, None
         return self.vertices[function_name]
 
     def __setitem__(self, function_name, value):
+        if isinstance(function_name, str):
+            function_name = function_name, None
         self.vertices[function_name] = value
         if value.result == Result.Kind.EQUAL:
             self.equal_funs.add(value.names[ComparisonGraph.Side.LEFT])
-        if function_name.endswith(".void"):
+        if function_name[0].endswith(".void"):
             self._weak_vertex_cache.append(value)
+    
+    def __contains__(self, function_name):
+        if isinstance(function_name, str):
+            function_name = function_name, None
+        return function_name in self.vertices
 
     def __repr__(self):
         return "Graph(vertices: {0}, equal_funs: {1})".format(
@@ -315,7 +325,7 @@ class ComparisonGraph:
         the preferred way to add a new edge to the graph.
         """
         vertex.add_successor(side, edge)
-        if edge.target_name.endswith(".void"):
+        if edge.target_name[0].endswith(".void"):
             # Edge's target is a variant function (e.g. a void-returning one).
             # This is possibly a weak dependency (this depends on whether the
             # target vertex, which doesn't have to be present yet, has equal as
@@ -402,7 +412,7 @@ class ComparisonGraph:
         generate an additional diff.
         """
         for edge in self._normalize_edge_cache:
-            unpointed_name = edge.target_name[:-len(".void")]
+            unpointed_name = edge.target_name[0][:-len(".void")], edge.target_name[1]
             # Now the vertex the edge is pointing to should be in place.
             # Note: the key is always the name of the variant function.
             vertex = self[edge.target_name]
@@ -427,7 +437,7 @@ class ComparisonGraph:
                             weak_vertex.names[ComparisonGraph.Side.LEFT].
                             endswith(".void")
                             else weak_vertex.names[ComparisonGraph.Side.RIGHT])
-            non_pointed_name = pointed_name[:-len(".void")]
+            non_pointed_name = pointed_name[0][:-len(".void")], pointed_name[1]
             del self.vertices[pointed_name]
             if non_pointed_name not in self.vertices:
                 # Corresponding strong vertex does not exist. Strengthen this
@@ -516,7 +526,7 @@ class ComparisonGraph:
                 backtracking_map = (backtracking_map_left
                                     if side == ComparisonGraph.Side.LEFT
                                     else backtracking_map_right)
-                if fun == vertex.names[side]:
+                if fun == vertex.names[side][0]:
                     # There is no callstack from the base function.
                     calls = None
                 else:
@@ -527,7 +537,7 @@ class ComparisonGraph:
                 # if and only if there is a non-function difference
                 # referencing it.
                 fun_pair.append(Result.Entity(
-                    vertex.names[side],
+                    vertex.names[side][0],
                     vertex.files[side],
                     vertex.lines[side],
                     calls,

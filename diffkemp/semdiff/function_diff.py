@@ -254,8 +254,8 @@ def functions_diff(mod_first, mod_second,
                                                  Result.Kind.ASSUMED_EQUAL]])
 
         objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
-            curr_result_graph.graph_to_fun_pair_list(fun_first,
-                                                     fun_second,
+            curr_result_graph.graph_to_fun_pair_list((fun_first, glob_var.name if glob_var else None),
+                                                     (fun_second, glob_var.name if glob_var else None),
                                                      config.full_diff)
 
         mod_first.restore_unlinked_llvm()

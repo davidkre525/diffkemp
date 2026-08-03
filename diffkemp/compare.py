@@ -195,6 +195,7 @@ class SnapshotComparator:
             module_cache=group_info.module_cache,
             modules_to_cache=group_info.modules_to_cache)
         group_info.result_graph = fun_result.graph
+        fun_result.glob_var = old_fun_desc.glob_var
 
         self._handle_fun_result(fun_result, fun, old_fun_desc, group_info)
         self._cleanup_modules(old_fun_desc, new_fun_desc)

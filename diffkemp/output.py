@@ -15,6 +15,7 @@ class YamlOutput:
         self.result = result
         self.output = {}
         # Sets with symbol names
+        # Note: function_names is set of tuples (function, global_var)
         self.function_names = set()
         self.macro_names = set()
         # Note: type_names contains tuples (type name, parent name)
@@ -59,7 +60,7 @@ class YamlOutput:
         """
         if fun_result.kind != Result.Kind.NOT_EQUAL:
             return
-        self.function_names.add(fun_name)
+        self.function_names.add((fun_name, fun_result.glob_var))
         # list of not-equal functions callstacks for a function
         diffs = []
         for called_res in sorted(fun_result.inner.values(),
@@ -81,7 +82,8 @@ class YamlOutput:
             if called_res.first.callstack:
                 function_names, macro_names, type_names = called_res \
                     .first.callstack.get_symbol_names(fun_name)
-                self.function_names.update(function_names)
+                self.function_names.update({(fun_name, fun_result.glob_var)
+                                             for fun_name in function_names})
                 self.macro_names.update(macro_names)
                 self.type_names.update(type_names)
 
@@ -117,8 +119,8 @@ class YamlOutput:
             }
             # function name differs
             if vertex.names[1] != vertex.names[0]:
-                definition["new"]["name"] = vertex.names[1]
-            definitions[name] = definition
+                definition["new"]["name"] = vertex.names[1][0]
+            definitions[name[0]] = definition
         self.output["definitions"].update(definitions)
 
     def _create_type_defs(self):
