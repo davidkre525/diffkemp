@@ -2,6 +2,7 @@
 from diffkemp.llvm_ir.source_tree import SourceNotFoundException
 from diffkemp.simpll.simpll import run_simpll, SimpLLException
 from diffkemp.semdiff.result import Result
+from diffkemp.semdiff.caching import ComparisonGraph
 from diffkemp.syndiff.function_syntax_diff import syntax_diff
 from subprocess import Popen, PIPE
 from threading import Timer
@@ -200,11 +201,13 @@ def functions_diff(mod_first, mod_second,
         simplify = True
         while simplify:
             simplify = False
+
+            graph_key = ComparisonGraph.DictKey(fun_first, glob_var)
             if (prev_result_graph and
-                    fun_first in prev_result_graph.vertices and
-                    (prev_result_graph[fun_first].result !=
+                    graph_key in prev_result_graph and
+                    (prev_result_graph[graph_key].result !=
                      Result.Kind.ASSUMED_EQUAL) and
-                    prev_result_graph[fun_first].same_file()):
+                    prev_result_graph[graph_key].same_file()):
                 first_simpl = ""
                 second_simpl = ""
                 curr_result_graph = prev_result_graph
@@ -250,13 +253,16 @@ def functions_diff(mod_first, mod_second,
                     if function_cache:
                         function_cache.update(
                             [v for v in curr_result_graph.vertices.values()
-                             if v.result not in [Result.Kind.UNKNOWN,
-                                                 Result.Kind.ASSUMED_EQUAL]])
+                             if v.only_name() and
+                             v.result not in [Result.Kind.UNKNOWN,
+                                              Result.Kind.ASSUMED_EQUAL]])
 
+        glob_var_name = glob_var.name if glob_var else None
         objects_to_compare, syndiff_bodies_left, syndiff_bodies_right = \
-            curr_result_graph.graph_to_fun_pair_list(fun_first,
-                                                     fun_second,
-                                                     config.full_diff)
+            curr_result_graph.graph_to_fun_pair_list(fun_first, fun_second,
+                                                     config.full_diff,
+                                                     glob_var_name,
+                                                     glob_var_name)
 
         mod_first.restore_unlinked_llvm()
         mod_second.restore_unlinked_llvm()
